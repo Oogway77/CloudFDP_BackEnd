@@ -1,0 +1,289 @@
+swagger: "2.0"
+info:
+  title: Fair Solution API
+  description: API for Fair Solution
+  version: 0.0.1
+
+basePath: /localhost:8080
+schemes:
+- http
+
+definitions:
+  SimpleResponse:
+    type: object
+    properties:
+      message:
+        type: string
+    example:
+      message: 'Success'
+  BadRequest:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      httpStatusCode:
+        type: integer
+      fields:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+              example: 'body.azureSubscriptions[0].subscriptionId'
+            param:
+              type: string
+              description: Name of invalid field
+            message:
+              type: string
+            type:
+              type: string
+              enum:
+              - REQUIRED
+              - INVALID
+    example:
+      httpStatusCode: 400
+      code: E_INVALID_ARGUMENTS
+      fields:
+      - param: networkName
+        message: '"networkName" is required'
+        type: REQUIRED
+      - param: defaultAcc
+        message: '"defaultAcc" must be a boolean'
+        type: INVALID
+      - param: version
+        message: '"version" must be one of [v1.11.8]'
+        type: INVALID
+
+  Unauthorized:
+    description: Session is expired
+    schema:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        httpStatusCode:
+          type: integer
+      example:
+        code: "E_TOKEN_INVALID"
+        message: "Your session has been expired"
+        params: null
+        httpStatusCode: 401
+  Forbidden:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      httpStatusCode:
+        type: integer
+    example:
+      code: E_PERMISSION_ERROR
+      message: You don't have permission to access this API
+      params: null
+      httpStatusCode: 403
+  NotFound:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      httpStatusCode:
+        type: integer
+    example:
+      code: "E_USER_NOT_FOUND"
+      message: "User wasn't found"
+      params: "id"
+      httpStatusCode: 404
+  UserCreation:
+    type: object
+    properties:
+      password:
+        type: string
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      role:
+        type: string
+    example:
+      password: "password"
+      email: "user01@email.co"
+      firstname: "fName"
+      lastname: "lName"
+      role: "Patient"
+  SignIn:
+    type: object
+    properties:
+      email:
+        type: string 
+      password:
+        type: string
+    example:
+      username: "user01"
+      password: "password"
+  UserLoginSuccessfull:
+    type: object
+    properties:
+      code:
+        type: string
+      data:
+        type: object
+        user:
+          type: object
+          properties:
+            "_id":
+              type: string
+            is_active:
+              type: boolean
+            username:
+              type: string
+            email:
+              type: string
+            firstname:
+              type: string
+            lastname:
+              type: string
+      msg:
+        type: string
+    example:
+      code: 1
+      data:
+        user:
+          _id: "password"
+          is_active: true
+          username: "username_test1"
+          email: "test@email.com"
+          firstname: "firstname_test1"
+          lastname: "lastname_test1"
+        token: "5ab3c6610831e37870786731#1523889347676"
+      msg: Login Success
+  UserCreation:
+    type: object
+    properties:
+      password:
+        type: string
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      role:
+        type: string
+    example:
+      password: "password"
+      email: "user01@email.co"
+      firstname: "fName"
+      lastname: "lName"
+      role: "Client"
+  InternalServerError:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      params:
+        type: string
+      httpStatusCode:
+        type: integer
+    example:
+      code: "E_INTERNAL_SERVER_ERROR"
+      message: "Internal Server Error"
+      params: null
+      httpStatusCode: 500
+
+parameters:
+  Token:
+    name: token
+    in: header
+    required: true
+    type: string
+    description: Encoded user token
+
+paths:
+  /currentVersion:
+    get:
+      tags:
+      - Version
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Current version of backend
+          schema:
+            type: object
+            properties:
+              version:
+                type: string
+  /auth/signin:
+    post:
+      summary: SignIn
+      tags:
+      - Auth
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: user parameters
+        required: true
+        schema:
+          $ref: '#/definitions/SignIn'
+      responses:
+        200:
+          description: User login successfull
+          schema:
+            $ref: '#/definitions/UserLoginSuccessfull'
+        404:
+          description: User not found
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              params:
+                type: string
+              httpStatusCode:
+                type: integer
+            example:
+              code: "E_USER_NOT_FOUND"
+              message: "User wasn't found"
+              params: null
+              httpStatusCode: 404
+        500:
+          description: User signin failed
+          schema:
+            $ref: '#/definitions/InternalServerError'
+  /auth/signup:
+    post:
+      summary: Signup
+      tags:
+      - Auth
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: user parameters
+        required: true
+        schema:
+          $ref: '#/definitions/UserCreation'
+      responses:
+        200:
+          description: User creation Success
+          schema:
+            $ref: '#/definitions/UserCreation'
+        500:
+          description: User creation Failed
+          schema:
+            $ref: '#/definitions/InternalServerError'
